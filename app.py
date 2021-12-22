@@ -1,4 +1,7 @@
-# Seu código aqui
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
 produtos = [
     {"id": 1, "name": "sabonete", "price": 5.99},
     {"id": 2, "name": "perfume", "price": 39.90},
@@ -31,3 +34,76 @@ produtos = [
     {"id": 29, "name": "coberta", "price": 55.99},
     {"id": 30, "name": "sofa", "price": 600.15}
 ]
+
+@app.get("/products")
+def get_products():
+    """ Lista os produtos """
+
+    return jsonify(produtos), 200
+
+@app.get("/products/<id>")
+def get_product(id: int):
+    """ Mostra o produto com o mesmo id """
+    
+    id = int(id)
+    product = dict()
+    for item in produtos:
+        if item["id"] == id:
+            product = dict(item)
+
+    if product == {}:
+        return jsonify({"message": "ID não encontrado"}), 404
+
+    return jsonify(product), 200
+
+@app.post("/products")
+def post_product():
+    """ Insere um novo produto """
+
+    last_prod = produtos[len(produtos)-1]
+    data = dict(request.json)
+
+    if not (data.get("name") and data.get("price")):
+        return jsonify({"message": "Necessario name e price"}), 400
+
+    data["id"] = last_prod["id"] + 1
+    produtos.append(data)
+    return jsonify(data), 201
+
+@app.patch("/products/<id>")
+def patch_product(id: int):
+    """ Modificar o produto """
+
+    id = int(id)
+    data = dict(request.json)
+    done = bool(False)
+    for item in produtos:
+        if item["id"] == id:
+            item["name"] = data.get("name", item["name"])
+            item["price"] = data.get("price", item["price"])
+            done = bool(True)
+
+    if done:
+        return jsonify(), 204
+
+    return jsonify({"message": "ID não encontrado"}), 404
+
+@app.delete("/products/<id>")
+def delete_product(id: int):
+    """ Deletar o produto """
+
+    id = int(id)
+    index = 0
+    is_found = bool(False)
+    for item in produtos:
+        if (item["id"] == id or is_found):
+            is_found = bool(True)
+        else:
+            index += 1
+
+
+    if is_found:
+        produtos.pop(index)
+        return jsonify(), 204
+
+    return jsonify({"message": "ID não encontrado"}), 404
